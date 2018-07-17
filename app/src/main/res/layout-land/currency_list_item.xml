@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/currency_info_layout">
+
+    <ImageView
+        android:id="@+id/currency_info_image"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="1.6"
+        app:srcCompat="@drawable/currency" />
+
+    <TextView
+        android:id="@+id/currency_info_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="10dp"
+        android:layout_weight="1.8"
+        android:text="USD"
+        android:textSize="22sp" />
+
+    <ImageView
+        android:id="@+id/currency_info_direction"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="1.6"
+        app:srcCompat="@drawable/arrow_up" />
+
+    <TextView
+        android:id="@+id/currency_info_delta"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="10dp"
+        android:layout_weight="2"
+        android:text="-0.075"
+        android:textSize="22sp" />
+
+    <TextView
+        android:id="@+id/currency_info_delta_percent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="10dp"
+        android:layout_weight="2"
+        android:text="-0.075%"
+        android:textSize="22sp" />
+
+    <TextView
+        android:id="@+id/currency_info_rate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="10dp"
+        android:layout_weight="2"
+        android:text="40"
+        android:textSize="22sp" />
+
+    <TextView
+        android:id="@+id/currency_info_prev_rate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="10dp"
+        android:layout_weight="2"
+        android:text="40"
+        android:textSize="22sp" />
+</LinearLayout>
