@@ -13,25 +13,28 @@ class DataCache(context: Context){
 
     private val cacheMap = HashMap<String, CurrencyInfoOfDay>()
     init{
-        val reader = BufferedReader(InputStreamReader(cacheFile.inputStream()))
-        var line = reader.readLine()
-        while(line != null){
-            val list = line.split(" ")
-            val listCurrencies = ArrayList<CurrencyInfo>()
-            val data = list[0]
-            for(i in 1 until list.size){
-                val textCurrencyInfo = list[i]
-                val fields = textCurrencyInfo.split(":")
-                if(fields.size == 4){
-                    val currency = CurrencyInfo(fields[0], fields[1], fields[2].toFloat(), fields[3].toFloat())
-                    listCurrencies.add(currency)
+        if(cacheFile.exists()){
+            val reader = BufferedReader(InputStreamReader(cacheFile.inputStream()))
+            var line = reader.readLine()
+            while(line != null){
+                val list = line.split(" ")
+                val listCurrencies = ArrayList<CurrencyInfo>()
+                val data = list[0]
+                for(i in 1 until list.size){
+                    val textCurrencyInfo = list[i]
+                    val fields = textCurrencyInfo.split(":")
+                    if(fields.size == 4){
+                        val currency = CurrencyInfo(fields[0], fields[1], fields[2].toFloat(), fields[3].toFloat())
+                        listCurrencies.add(currency)
+                    }
                 }
+                val currencyInfoOfDay = CurrencyInfoOfDay(listCurrencies)
+                cacheMap[data] = currencyInfoOfDay
+                line = reader.readLine()
             }
-            val currencyInfoOfDay = CurrencyInfoOfDay(listCurrencies)
-            cacheMap[data] = currencyInfoOfDay
-            line = reader.readLine()
+            reader.close()
         }
-        reader.close()
+
     }
     fun addDataToCache(date: String, currencyInfoOfDay: CurrencyInfoOfDay){
         val writer = PrintWriter(OutputStreamWriter(FileOutputStream(cacheFile, true)))

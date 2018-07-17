@@ -1,18 +1,13 @@
 package com.example.r205_pc.currency
 
-import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import com.example.r205_pc.currency.utils.CurrenciesInfoUpdatedListener
-import com.example.r205_pc.currency.utils.CurrencyInfo
 import com.example.r205_pc.currency.utils.CurrencyInfoOfDay
 import com.example.r205_pc.currency.utils.RetrofitUtil
 import kotlinx.android.synthetic.main.activity_main.*
-import retrofit2.Call
-import retrofit2.Response
-import java.time.Instant
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -45,10 +40,6 @@ class MainActivity : AppCompatActivity() {
             }
 
         })
-
-
-
-
 
         retrofitUtil.getCurrenciesOfDate(formatter.format(currDate))
 
