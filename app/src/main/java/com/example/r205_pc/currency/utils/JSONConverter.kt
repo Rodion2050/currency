@@ -18,7 +18,7 @@ class JSONConverter: Converter<ResponseBody, List<CurrencyInfo>> {
         val jsonObject = JSONObject(body)
         val currArray = jsonObject.getJSONArray("exchangeRate")
         val list = ArrayList<CurrencyInfo>()
-        for (i in 0 until currArray.length()){
+        for (i in 1 until currArray.length()){
             val currObj = currArray.getJSONObject(i)
             list.add(CurrencyInfo(currObj.getString("baseCurrency"),
                               currObj.getString("currency"),

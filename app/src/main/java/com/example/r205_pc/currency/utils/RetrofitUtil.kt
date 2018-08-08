@@ -7,6 +7,7 @@ import retrofit2.Converter
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
 import java.lang.reflect.Array
 import java.text.SimpleDateFormat
 import java.util.*
@@ -16,7 +17,7 @@ import kotlin.collections.HashMap
 /**
  * Created by r205-pc on 13.07.2018.
  */
-class RetrofitUtil(context: Context){
+class RetrofitUtil(){
     val TAG = "RetrofitUtil"
     private val retrofit = Retrofit.Builder()
             .baseUrl("https://api.privatbank.ua")
@@ -27,12 +28,22 @@ class RetrofitUtil(context: Context){
     private val privatBankApi:PrivatBankApi = retrofit.create(PrivatBankApi::class.java)
     private val currenciesUpdatedListeners  = ArrayList<CurrenciesInfoUpdatedListener>()
     private val timer = Timer()
-    private val cachedData = DataCache(context)
+    private val cachedData = DataCache()
 
-    val formatter = SimpleDateFormat("dd.MM.yyyy")
 
     fun addCurrencyUpdatedListener(listener: CurrenciesInfoUpdatedListener){
         currenciesUpdatedListeners.add(listener)
+    }
+    fun removeCurrencyUpdatedListener(listener: CurrenciesInfoUpdatedListener){
+        for(i in 0 until currenciesUpdatedListeners.size){
+            if(currenciesUpdatedListeners[i] == listener){
+                currenciesUpdatedListeners.removeAt(i)
+            }
+        }
+    }
+
+    fun setCacheFile(file: File){
+        cachedData.setCacheFile(file)
     }
 
     fun getCurrenciesOfDate(dateStr: String){
@@ -51,7 +62,7 @@ class RetrofitUtil(context: Context){
                     override fun run() {
                         getCurrenciesOfDate(dateStr)
                     }
-                }, 1000)
+                }, 10000)
             }
 
             override fun onResponse(call: Call<List<CurrencyInfo>>?, response: Response<List<CurrencyInfo>>?) {
