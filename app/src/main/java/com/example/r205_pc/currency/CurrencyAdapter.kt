@@ -1,5 +1,6 @@
 package com.example.r205_pc.currency
 
+import android.graphics.Color
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -9,7 +10,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.example.r205_pc.currency.utils.CurrencyInfo
 import com.example.r205_pc.currency.utils.CurrencyInfoOfDay
-import com.example.r205_pc.currency.utils.RetrofitUtil
+
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,7 +32,7 @@ class CurrencyAdapter(private var currDate: String, private var dateToCompare: S
     override fun onBindViewHolder(holder: CurrencyAdapterViewHolder, position: Int) {
         val currencyInfoDataSet = currencyInfoMap[currDate]?.list
         currencyInfoDataSet ?: return
-        holder.view.findViewById<TextView>(R.id.currency_info_rate).text = String.format("%.3f", currencyInfoDataSet[position].saleRateNB)
+        holder.view.findViewById<TextView>(R.id.currency_info_rate).text = String.format("%.5f", currencyInfoDataSet[position].rate)
         holder.view.findViewById<TextView>(R.id.currency_info_name).text = currencyInfoDataSet[position].currency
 
         val currencyInfoImage = holder.view.findViewById<ImageView>(R.id.currency_info_image)
@@ -54,15 +55,19 @@ class CurrencyAdapter(private var currDate: String, private var dateToCompare: S
         if(currencyInfoDataSetPrevDate == null){
             currencyInfoDirection.setImageResource(R.drawable.arrow_up)
         }else{
-            if(currencyInfoDataSet[position].saleRateNB >= currencyInfoDataSetPrevDate[position].saleRateNB){
+            val delta = currencyInfoDataSet[position].rate - currencyInfoDataSetPrevDate[position].rate
+            val deltaTextView = holder.view.findViewById<TextView>(R.id.currency_info_delta_percent)
+            deltaTextView.text = String.format("%+.3f%%", delta/currencyInfoDataSet[position].rate*100)
+
+            if(currencyInfoDataSet[position].rate >= currencyInfoDataSetPrevDate[position].rate){
                 currencyInfoDirection.setImageResource(R.drawable.arrow_up)
+                deltaTextView.setTextColor(Color.GREEN)
             }else{
                 currencyInfoDirection.setImageResource(R.drawable.arrow_down)
+                deltaTextView.setTextColor(Color.RED)
             }
-            holder.view.findViewById<TextView>(R.id.currency_info_prev_rate).text = String.format("%.3f",currencyInfoDataSetPrevDate[position].saleRateNB)
-            val delta = currencyInfoDataSet[position].saleRateNB - currencyInfoDataSetPrevDate[position].saleRateNB
-            holder.view.findViewById<TextView>(R.id.currency_info_delta).text = String.format("%+.3f", delta)
-            holder.view.findViewById<TextView>(R.id.currency_info_delta_percent).text = String.format("%+.2f%%", delta/currencyInfoDataSet[position].saleRateNB*100)
+
+
         }
 
 

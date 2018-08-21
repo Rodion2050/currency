@@ -1,73 +1,141 @@
 package com.example.r205_pc.currency
 
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.opengl.Visibility
+import android.os.AsyncTask
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.PersistableBundle
+import android.preference.PreferenceManager
+import android.support.design.widget.Snackbar
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.DatePicker
-import com.example.r205_pc.currency.utils.CurrenciesInfoUpdatedListener
-import com.example.r205_pc.currency.utils.CurrencyInfoOfDay
-import com.example.r205_pc.currency.utils.RetrofitUtil
+import com.example.r205_pc.currency.utils.*
+import com.example.r205_pc.currency.utils.Currency
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main2.*
 import java.io.File
+import java.lang.ref.WeakReference
 import java.text.SimpleDateFormat
 import java.util.*
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val TAG = "MainActivity"
     private val currencyAdapter = CurrencyAdapter("", "", mapOf(Pair("", CurrencyInfoOfDay(emptyList()))))
-    private val formatter = SimpleDateFormat("dd.MM.yyyy")
-    private var currDate:Date = formatter.parse("12.07.2018")
-    private val retrofitUtil = MyApplication.getRetrofitUtil()
-    private val currenciesListener = CurrenciesUpdatedListener()
+    private val formatter = SimpleDateFormat("yyyy-MM-dd")
+    private var currDate:String = formatter.format(Date())
+    private val fixerApi = MyApplication.getFixerApi()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+//        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_main2)
+        //setSupportActionBar(toolbar)
 
+        fab.setOnClickListener { view ->
+            startActivity(Intent(this, SelectCurrenciesActivity::class.java))
+        }
+
+
+
+        //setUsedCurrencySymbols("RUB,USD,UAH,AUD,BTC,GBP,JPY,CHF,CNY,ALL")
+
+        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        sp.registerOnSharedPreferenceChangeListener({_, _ -> fixerApi.setSymbols(getUsedCurrencySymbols()) })
 
         initRecyclerView()
 
+//        fixerApi.setSymbols(getUsedCurrencySymbols())
+//        getCurrenciesOfDate(currDate)
+//        showData()
 
-        retrofitUtil.addCurrencyUpdatedListener(currenciesListener)
+        okButton.setOnClickListener(this)
+        cancelButton.setOnClickListener(this)
 
-        retrofitUtil.getCurrenciesOfDate(formatter.format(currDate))
-
-        okButton.setOnClickListener(ClickListener())
-        cancelButton.setOnClickListener(ClickListener())
+        if(savedInstanceState != null){
+             currDate = savedInstanceState.getString("CurrDate", formatter.format(Date()))
+        }
 
     }
 
-    inner class ClickListener : View.OnClickListener {
-        override fun onClick(view: View?){
-            when(view?.id){
-                R.id.cancelButton -> showData()
-                R.id.okButton -> {
-                    currDate = datePickerView.date()
-                    retrofitUtil.getCurrenciesOfDate(formatter.format(currDate))
-                    showData()
-                }
+    override fun onStart() {
+        super.onStart()
+        fixerApi.setSymbols(getUsedCurrencySymbols())
+        getCurrenciesOfDate(currDate)
+        showData()
+
+
+    }
+
+    override fun onClick(view: View?) {
+        when (view?.id) {
+            R.id.cancelButton -> showData()
+            R.id.okButton -> {
+                currDate = formatter.format(datePickerView.date())
+                getCurrenciesOfDate(currDate)
+                showData()
             }
         }
     }
+    /**
+     * Сохраняет кодировки валют, которые интересуют пользователя, перечисленные через ","
+     * */
+    private fun setUsedCurrencySymbols(syms:String){
+        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        sp.edit().putString("CurrencySymbols", syms).apply()
+    }
+    private fun getUsedCurrencySymbols():String{
+        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        return sp.getString("CurrencySymbols", "USD")
+    }
 
-    inner class CurrenciesUpdatedListener : CurrenciesInfoUpdatedListener{
-        override fun onCurrenciesInfoUpdated(date: String ,data: Map<String,CurrencyInfoOfDay>) {
-            currencyAdapter.setData(formatter.format(currDate), formatter.format(currDate.previousDay()), data)
-            val prevDay = currDate.previousDay()
-            if(!data.containsKey(formatter.format(prevDay))){
-                retrofitUtil.getCurrenciesOfDate(formatter.format(prevDay))
+    private fun getCurrenciesOfDate(date: String) {
+        FetchCurrenciesRates(this).execute(date)
+    }
+
+    /**
+     * Получение данных о курсах*/
+    class FetchCurrenciesRates(activity: MainActivity) : AsyncTask<String, Unit, Map<String,CurrencyInfoOfDay>>(){
+        private val activity = WeakReference<MainActivity>(activity)
+        private var date = ""
+        override fun doInBackground(vararg p0: String): Map<String,CurrencyInfoOfDay> {
+            val api = MyApplication.getFixerApi()
+            date = p0[0]
+            val act = activity.get()
+
+
+            var map = api.getCurrenciesRatesOfDay(p0[0])
+
+            if(act != null){
+                val fmt = act.formatter
+                val dateToCompare = fmt.format(fmt.parse(date).previousDay())
+                map = api.getCurrenciesRatesOfDay(dateToCompare)
             }
-
+            return map
+        }
+        override fun onPostExecute(result: Map<String,CurrencyInfoOfDay>) {
+            val act = activity.get()
+            if(act != null){
+                val fmt = act.formatter
+                val dateToCompare = fmt.format(fmt.parse(date).previousDay())
+                act.currencyAdapter.setData(date, dateToCompare, result)
+            }
+        }
+        fun Date.previousDay():Date{
+            return Date(time - 24*60*60*1000)
         }
     }
 
-    override fun onDestroy() {
-        retrofitUtil.removeCurrencyUpdatedListener(currenciesListener)
-        super.onDestroy()
+    override fun onSaveInstanceState(outState: Bundle?) {
+        outState?.putString("CurrDate", currDate)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -88,7 +156,8 @@ class MainActivity : AppCompatActivity() {
         val yearFmt = SimpleDateFormat("yyyy")
         val monthFmt = SimpleDateFormat("MM")
         val dayFmt = SimpleDateFormat("dd")
-        datePickerView.init(yearFmt.format(currDate).toInt(), monthFmt.format(currDate).toInt() - 1, dayFmt.format(currDate).toInt(), {d, a, b, c -> Unit})
+        val date = formatter.parse(currDate)
+        datePickerView.init(yearFmt.format(date).toInt(), monthFmt.format(date).toInt() - 1, dayFmt.format(date).toInt(), {d, a, b, c -> Unit})
         datePickerDial.visibility = View.VISIBLE
     }
 
@@ -110,11 +179,9 @@ class MainActivity : AppCompatActivity() {
 
         }
     }
-    fun Date.previousDay():Date{
-        return Date(time - 24*60*60*1000)
-    }
+
     fun DatePicker.date():Date{
-        val date = formatter.parse("$dayOfMonth.${month+1}.$year")
+        val date = formatter.parse("$year-${month+1}-$dayOfMonth")
         Log.d(TAG, formatter.format(date))
         return date
     }

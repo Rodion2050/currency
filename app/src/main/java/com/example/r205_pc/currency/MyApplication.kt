@@ -1,7 +1,8 @@
 package com.example.r205_pc.currency
 
 import android.app.Application
-import com.example.r205_pc.currency.utils.RetrofitUtil
+import android.preference.PreferenceManager
+import com.example.r205_pc.currency.utils.FixerApi
 import java.io.File
 
 /**
@@ -10,13 +11,15 @@ import java.io.File
 class MyApplication : Application()  {
     override fun onCreate() {
         super.onCreate()
-        val fileName = "currencyInfoSaved"
-        val cacheFile = File(this.filesDir, fileName)
-        retrofit.setCacheFile(cacheFile)
+        val fileNameRates = "currencyRatesSaved"
+        val fileNameCurrencies = "currenciesListSaved"
+        val cacheRatesFile = File(this.filesDir, fileNameRates)
+        val cacheCurrenciesFile = File(this.filesDir, fileNameCurrencies)
+        api.setCacheFiles(cacheCurrenciesFile, cacheRatesFile)
     }
     companion object {
-        private val retrofit = RetrofitUtil()
-        fun getRetrofitUtil() = retrofit
-    }
 
+        private val api = FixerApi()
+        fun getFixerApi() = api
+    }
 }
