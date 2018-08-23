@@ -17,7 +17,7 @@ import java.util.*
 /**
  * Created by r205-pc on 14.07.2018.
  */
-class CurrencyAdapter(private var currDate: String, private var dateToCompare: String,private var currencyInfoMap : Map<String, CurrencyInfoOfDay>) : RecyclerView.Adapter<CurrencyAdapter.CurrencyAdapterViewHolder>() {
+class CurrencyAdapter(private var currDate: String, private var dateToCompare: String,private var currencyInfoMap : Map<String, CurrencyInfoOfDay>, private var currencyBaseRate:Float, private var invertRates:Boolean) : RecyclerView.Adapter<CurrencyAdapter.CurrencyAdapterViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CurrencyAdapterViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.currency_list_item, parent, false)
         return CurrencyAdapterViewHolder(view)
@@ -32,7 +32,10 @@ class CurrencyAdapter(private var currDate: String, private var dateToCompare: S
     override fun onBindViewHolder(holder: CurrencyAdapterViewHolder, position: Int) {
         val currencyInfoDataSet = currencyInfoMap[currDate]?.list
         currencyInfoDataSet ?: return
-        holder.view.findViewById<TextView>(R.id.currency_info_rate).text = String.format("%.5f", currencyInfoDataSet[position].rate)
+        val currencyRate = if(invertRates){1/(currencyInfoDataSet[position].rate/currencyBaseRate)}
+                           else{currencyInfoDataSet[position].rate/currencyBaseRate}
+
+        holder.view.findViewById<TextView>(R.id.currency_info_rate).text = String.format("%.5f", currencyRate)
         holder.view.findViewById<TextView>(R.id.currency_info_name).text = currencyInfoDataSet[position].currency
 
         val currencyInfoImage = holder.view.findViewById<ImageView>(R.id.currency_info_image)
@@ -55,11 +58,14 @@ class CurrencyAdapter(private var currDate: String, private var dateToCompare: S
         if(currencyInfoDataSetPrevDate == null){
             currencyInfoDirection.setImageResource(R.drawable.arrow_up)
         }else{
-            val delta = currencyInfoDataSet[position].rate - currencyInfoDataSetPrevDate[position].rate
-            val deltaTextView = holder.view.findViewById<TextView>(R.id.currency_info_delta_percent)
-            deltaTextView.text = String.format("%+.3f%%", delta/currencyInfoDataSet[position].rate*100)
+            val currencyPrevRate = if(invertRates){1/(currencyInfoDataSetPrevDate[position].rate/currencyBaseRate)}
+                                   else{currencyInfoDataSetPrevDate[position].rate/currencyBaseRate}
 
-            if(currencyInfoDataSet[position].rate >= currencyInfoDataSetPrevDate[position].rate){
+            val delta =  currencyRate - currencyPrevRate
+            val deltaTextView = holder.view.findViewById<TextView>(R.id.currency_info_delta_percent)
+            deltaTextView.text = String.format("%+.3f%%", delta/currencyRate*100)
+
+            if(currencyRate >= currencyPrevRate){
                 currencyInfoDirection.setImageResource(R.drawable.arrow_up)
                 deltaTextView.setTextColor(Color.GREEN)
             }else{
@@ -73,10 +79,12 @@ class CurrencyAdapter(private var currDate: String, private var dateToCompare: S
 
     }
 
-    fun setData(date: String, prevDate : String, dataSet : Map<String, CurrencyInfoOfDay>){
+    fun setData(date: String, prevDate : String, dataSet : Map<String, CurrencyInfoOfDay>, baseCurrencyRate: Float, invertRates: Boolean){
         currDate = date
         dateToCompare = prevDate
         currencyInfoMap = dataSet
+        currencyBaseRate = baseCurrencyRate
+        this.invertRates = invertRates
         notifyDataSetChanged()
     }
 

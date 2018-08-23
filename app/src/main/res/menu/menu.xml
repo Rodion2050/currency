@@ -4,5 +4,9 @@
 <item android:id="@+id/pick_date_item"
     android:title="Pick Date"
     app:showAsAction="always"
-    android:icon="@android:drawable/ic_search_category_default"></item>
+    android:icon="@android:drawable/ic_search_category_default"/>
+    <item android:id="@+id/settings_open_item"
+        android:title="Settings"
+        app:showAsAction="ifRoom"
+        />
 </menu>

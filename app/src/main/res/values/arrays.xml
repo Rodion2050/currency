@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="currenciesList">
+        <item>USD</item>
+        <item>EUR</item>
+        <item>RUB</item>
+        <item>UAH</item>
+        <item>AUD</item>
+        <item>ALL</item>
+        <item>BTC</item>
+    </array>
+
+</resources>

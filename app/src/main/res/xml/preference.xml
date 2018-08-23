@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<ListPreference android:entries="@array/currenciesList"
+    android:entryValues="@array/currenciesList"
+    android:key="BaseCurrency"
+    android:title="baseCurrency"
+    />
+    <SwitchPreference android:title="Invert Currencies Rates"
+        android:key="InvertRates"
+        />
+</PreferenceScreen>

@@ -27,7 +27,7 @@ import java.util.*
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val TAG = "MainActivity"
-    private val currencyAdapter = CurrencyAdapter("", "", mapOf(Pair("", CurrencyInfoOfDay(emptyList()))))
+    private val currencyAdapter = CurrencyAdapter("", "", mapOf(Pair("", CurrencyInfoOfDay(emptyList()))), 1.0f, false)
     private val formatter = SimpleDateFormat("yyyy-MM-dd")
     private var currDate:String = formatter.format(Date())
     private val fixerApi = MyApplication.getFixerApi()
@@ -43,12 +43,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             startActivity(Intent(this, SelectCurrenciesActivity::class.java))
         }
 
-
-
         //setUsedCurrencySymbols("RUB,USD,UAH,AUD,BTC,GBP,JPY,CHF,CNY,ALL")
-
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        sp.registerOnSharedPreferenceChangeListener({_, _ -> fixerApi.setSymbols(getUsedCurrencySymbols()) })
 
         initRecyclerView()
 
@@ -95,6 +90,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         val sp = PreferenceManager.getDefaultSharedPreferences(this)
         return sp.getString("CurrencySymbols", "USD")
     }
+    private fun getBaseCurrency():String{
+        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        return sp.getString("BaseCurrency", "EUR")
+    }
+    private fun getInvertRates():Boolean{
+        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        return sp.getBoolean("InvertRates", false)
+    }
 
     private fun getCurrenciesOfDate(date: String) {
         FetchCurrenciesRates(this).execute(date)
@@ -120,12 +123,25 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
             return map
         }
+
         override fun onPostExecute(result: Map<String,CurrencyInfoOfDay>) {
             val act = activity.get()
             if(act != null){
                 val fmt = act.formatter
+                val baseCurrency = act.getBaseCurrency()
+                val listCurrencies = result[date]?.list
+                var baseCurrencyRate = 1.0f
+                if(listCurrencies != null){
+                    for(i in listCurrencies){
+                        if(i.currency == baseCurrency){
+                            baseCurrencyRate = i.rate
+                            break
+                        }
+                    }
+                }
+
                 val dateToCompare = fmt.format(fmt.parse(date).previousDay())
-                act.currencyAdapter.setData(date, dateToCompare, result)
+                act.currencyAdapter.setData(date, dateToCompare, result, baseCurrencyRate, act.getInvertRates())
             }
         }
         fun Date.previousDay():Date{
@@ -147,6 +163,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when(item?.itemId){
             R.id.pick_date_item -> showDatePicker()
+            R.id.settings_open_item -> startActivity(Intent(this, SettingsActivity::class.java))
         }
         return true
     }
