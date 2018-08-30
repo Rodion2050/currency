@@ -6,12 +6,14 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.widget.LinearLayoutManager
 import com.example.r205_pc.currency.utils.Currency
+import com.example.r205_pc.currency.utils.PreferencesHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_select_currencies.*
 import java.lang.ref.WeakReference
 
 class SelectCurrenciesActivity : AppCompatActivity() {
     val currencyChooseAdapter = CurrencyChooseAdapter()
+    val preferenceHelper = PreferencesHelper(this)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_select_currencies)
@@ -38,22 +40,15 @@ class SelectCurrenciesActivity : AppCompatActivity() {
         override fun onPostExecute(result: List<Currency>) {
             val act = activity.get()
             if(act != null){
-                act.currencyChooseAdapter.setData(result, act.getUsedCurrencySymbols())
+                act.currencyChooseAdapter.setData(result, act.preferenceHelper.getUsedCurrencySymbols())
             }
         }
     }
 
     override fun onPause() {
         super.onPause()
-        setUsedCurrencySymbols(currencyChooseAdapter.getSelectedCurrencies())
+        preferenceHelper.setUsedCurrencySymbols(currencyChooseAdapter.getSelectedCurrencies())
     }
 
-    private fun setUsedCurrencySymbols(syms:String){
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        sp.edit().putString("CurrencySymbols", syms).apply()
-    }
-    private fun getUsedCurrencySymbols():String{
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        return sp.getString("CurrencySymbols", "USD")
-    }
+
 }

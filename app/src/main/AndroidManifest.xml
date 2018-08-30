@@ -19,8 +19,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SelectCurrenciesActivity"></activity>
-        <activity android:name=".SettingsActivity"></activity>
+        <activity android:name=".SelectCurrenciesActivity" />
+        <activity android:name=".SettingsActivity" />
+        <activity android:name=".CalculatorActivity">
+
+        </activity>
     </application>
 
 </manifest>

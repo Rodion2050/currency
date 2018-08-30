@@ -24,13 +24,17 @@ import java.io.File
 import java.lang.ref.WeakReference
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.collections.HashMap
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
+class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.OnCurrencyChooseListener {
     private val TAG = "MainActivity"
-    private val currencyAdapter = CurrencyAdapter("", "", mapOf(Pair("", CurrencyInfoOfDay(emptyList()))), 1.0f, false)
+    private val currencyAdapter = CurrencyAdapter("", "", mapOf(Pair("", CurrencyInfoOfDay(emptyList()))), 1.0f, false, this)
     private val formatter = SimpleDateFormat("yyyy-MM-dd")
     private var currDate:String = formatter.format(Date())
     private val fixerApi = MyApplication.getFixerApi()
+    private val preferencesHelper = PreferencesHelper(this)
+    private val currenciesMap = ConcurrentHashMap<String, String>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,14 +46,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         fab.setOnClickListener { view ->
             startActivity(Intent(this, SelectCurrenciesActivity::class.java))
         }
-
-        //setUsedCurrencySymbols("RUB,USD,UAH,AUD,BTC,GBP,JPY,CHF,CNY,ALL")
+        FetchAvailableCurrencies(this).execute()
 
         initRecyclerView()
 
-//        fixerApi.setSymbols(getUsedCurrencySymbols())
-//        getCurrenciesOfDate(currDate)
-//        showData()
 
         okButton.setOnClickListener(this)
         cancelButton.setOnClickListener(this)
@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onStart() {
         super.onStart()
-        fixerApi.setSymbols(getUsedCurrencySymbols())
+        fixerApi.setSymbols(preferencesHelper.getUsedCurrencySymbols())
         getCurrenciesOfDate(currDate)
         showData()
 
@@ -79,24 +79,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
     }
-    /**
-     * Сохраняет кодировки валют, которые интересуют пользователя, перечисленные через ","
-     * */
-    private fun setUsedCurrencySymbols(syms:String){
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        sp.edit().putString("CurrencySymbols", syms).apply()
-    }
-    private fun getUsedCurrencySymbols():String{
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        return sp.getString("CurrencySymbols", "USD")
-    }
-    private fun getBaseCurrency():String{
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        return sp.getString("BaseCurrency", "EUR")
-    }
-    private fun getInvertRates():Boolean{
-        val sp = PreferenceManager.getDefaultSharedPreferences(this)
-        return sp.getBoolean("InvertRates", false)
+
+    override fun onCurrencyChooseListener(currency: CurrencyInfo) {
+        val invertRate = preferencesHelper.getInvertRates()
+        val baseCurrency = preferencesHelper.getBaseCurrency()
+        var descr = ""
+        if(!invertRate){
+            descr += "1 ${currenciesMap[baseCurrency]} = ${String.format("%f",currency.rate)} ${currenciesMap[currency.currency]}"
+        }else{
+            descr += "1 ${currenciesMap[currency.currency]} = ${String.format("%f", currency.rate)} ${currenciesMap[baseCurrency]}"
+        }
+        currencyRateDescription.text = descr
     }
 
     private fun getCurrenciesOfDate(date: String) {
@@ -128,7 +121,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val act = activity.get()
             if(act != null){
                 val fmt = act.formatter
-                val baseCurrency = act.getBaseCurrency()
+                val baseCurrency = act.preferencesHelper.getBaseCurrency()
                 val listCurrencies = result[date]?.list
                 var baseCurrencyRate = 1.0f
                 if(listCurrencies != null){
@@ -141,11 +134,54 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
 
                 val dateToCompare = fmt.format(fmt.parse(date).previousDay())
-                act.currencyAdapter.setData(date, dateToCompare, result, baseCurrencyRate, act.getInvertRates())
+                val res = HashMap<String, CurrencyInfoOfDay>()
+                //Remove base currency from list
+                val dataForTodayList = result[date]?.list
+                val modifiedData1 = mutableListOf<CurrencyInfo>()
+
+                if(dataForTodayList != null){
+                    for(i in dataForTodayList){
+                        if(i.currency != baseCurrency){
+                            modifiedData1.add(i)
+                        }
+                    }
+                }
+                res[date] = CurrencyInfoOfDay(modifiedData1)
+                val dataForPrevDay = result[dateToCompare]?.list
+                val modifiedData2 = mutableListOf<CurrencyInfo>()
+                if(dataForPrevDay != null){
+                    for(i in dataForPrevDay){
+                        if(i.currency != baseCurrency){
+                            modifiedData2.add(i)
+                        }
+                    }
+                }
+                res[dateToCompare] = CurrencyInfoOfDay(modifiedData2)
+
+
+                act.currencyAdapter.setData(date, dateToCompare, res, baseCurrencyRate, act.preferencesHelper.getInvertRates())
             }
         }
         fun Date.previousDay():Date{
             return Date(time - 24*60*60*1000)
+        }
+    }
+
+
+    class FetchAvailableCurrencies(activity: MainActivity) : AsyncTask<Unit, Unit, List<Currency>>(){
+        private val activity = WeakReference<MainActivity>(activity)
+
+        override fun doInBackground(vararg p0: Unit?): List<Currency> {
+            val api = MyApplication.getFixerApi()
+            return api.getSupportedSymbols()
+        }
+        override fun onPostExecute(result: List<Currency>) {
+            val act = activity.get()
+            if(act != null){
+                for(i in result){
+                    act.currenciesMap[i.code] = i.description
+                }
+            }
         }
     }
 
@@ -164,6 +200,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         when(item?.itemId){
             R.id.pick_date_item -> showDatePicker()
             R.id.settings_open_item -> startActivity(Intent(this, SettingsActivity::class.java))
+            R.id.calculator_open_item -> startActivity(Intent(this, CalculatorActivity::class.java))
         }
         return true
     }

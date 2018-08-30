@@ -9,4 +9,8 @@
         android:title="Settings"
         app:showAsAction="ifRoom"
         />
+    <item android:id="@+id/calculator_open_item"
+        android:title="Calculator"
+        app:showAsAction="never"
+        />
 </menu>

@@ -6,8 +6,14 @@
     android:layout_height="match_parent"
     tools:context="com.example.r205_pc.currency.MainActivity"
     tools:showIn="@layout/activity_main2"
+    android:orientation="vertical"
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/currencyRateDescription"
+        android:textSize="20sp"
+        android:layout_margin="10dp"/>
 
     <FrameLayout
         android:layout_width="match_parent"

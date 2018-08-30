@@ -9,6 +9,7 @@ import com.example.r205_pc.currency.utils.Currency
 import java.lang.ref.WeakReference
 import android.preference.Preference
 import android.preference.PreferenceManager
+import com.example.r205_pc.currency.utils.PreferencesHelper
 
 
 class SettingsFragment : PreferenceFragment(), SharedPreferences.OnSharedPreferenceChangeListener{
@@ -22,6 +23,8 @@ class SettingsFragment : PreferenceFragment(), SharedPreferences.OnSharedPrefere
         // Set summary to be the user-description for the selected value
         pref.summary = PreferenceManager.getDefaultSharedPreferences(activity).getString(BASE_CURRENCY_KEY, "EUR")
         FetchAvailableCurrencies(this).execute()
+
+
     }
 
     override fun onSharedPreferenceChanged(p0: SharedPreferences?, key: String?) {
@@ -54,12 +57,17 @@ class SettingsFragment : PreferenceFragment(), SharedPreferences.OnSharedPrefere
         }
         override fun onPostExecute(result: List<Currency>) {
             val fragment = this.fragment.get()
+
             if(fragment != null){
+                val currencies = PreferencesHelper(fragment.activity).getUsedCurrencySymbols().split(",")
                 val arr = mutableListOf<String>()
                 val arrCodes = mutableListOf<String>()
                 for(i in result){
-                    arr.add(i.description)
-                    arrCodes.add(i.code)
+                    if(currencies.contains(i.code)){
+                        arr.add(i.description)
+                        arrCodes.add(i.code)
+                    }
+
                 }
 
                 val pref = fragment.findPreference(fragment.BASE_CURRENCY_KEY)
