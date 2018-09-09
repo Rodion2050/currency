@@ -1,3 +1,6 @@
 package com.example.r205_pc.currency.utils
-//Содержит код валюты(напр. ALL) и описание(напр. Albanian Lek)
+
+/**
+ * POJO class contains code and description of currency
+ */
 data class Currency(val code:String, val description:String)

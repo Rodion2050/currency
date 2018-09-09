@@ -7,7 +7,7 @@ import com.example.r205_pc.currency.MainActivity
 class PreferencesHelper(private val context: Context){
     /**
      * Сохраняет кодировки валют, которые интересуют пользователя, перечисленные через ","
-     * */
+     */
     fun setUsedCurrencySymbols(syms:String){
         val sp = PreferenceManager.getDefaultSharedPreferences(context)
         sp.edit().putString("CurrencySymbols", syms).apply()

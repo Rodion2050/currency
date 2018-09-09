@@ -22,5 +22,7 @@ class ExampleUnitTest {
         assertEquals("1234.56", m.truncateNumberToNSymbols("1234.56", 7))
         assertEquals("123456", m.truncateNumberToNSymbols("123456", 5))
         assertEquals("0.0", m.truncateNumberToNSymbols("0.0", 5))
+        assertEquals("+123", m.truncateNumberToNSymbols("+123.25", 4))
+        assertEquals("+123", m.truncateNumberToNSymbols("+123.25", 5))
     }
 }

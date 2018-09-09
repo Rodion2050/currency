@@ -24,7 +24,8 @@ class CurrencyAdapter(private var currDate: String,
                       private var currencyInfoMap : Map<String, CurrencyInfoOfDay>,
                       private var currencyBaseRate:Float,
                       private var invertRates:Boolean,
-                      private val onCurrencyChooseListener: OnCurrencyChooseListener) : RecyclerView.Adapter<CurrencyAdapter.CurrencyAdapterViewHolder>() {
+                      private val onCurrencyChooseListener: OnCurrencyChooseListener)
+    : RecyclerView.Adapter<CurrencyAdapter.CurrencyAdapterViewHolder>() {
     private val TAG = "CurrencyAdapter"
 
     interface OnCurrencyChooseListener{
@@ -48,7 +49,7 @@ class CurrencyAdapter(private var currDate: String,
         val currencyRate = if(invertRates){1/(currencyInfoDataSet[position].rate/currencyBaseRate)}
                            else{currencyInfoDataSet[position].rate/currencyBaseRate}
         val helper = MathHelper()
-        holder.currencyRateTextView.text = helper.truncateNumberToNSymbols(String.format("%f", currencyRate), 7)
+        holder.currencyRateTextView.text = helper.truncateNumberToNSymbols(Formatter(Locale.ENGLISH).format("%f", currencyRate).toString(), 7)
         holder.currencyNameTextView.text = currencyInfoDataSet[position].currency
 
         val currencyInfoImage = holder.currencyImageView
@@ -76,7 +77,7 @@ class CurrencyAdapter(private var currDate: String,
 
             val delta =  currencyRate - currencyPrevRate
             val deltaTextView = holder.deltaTextView
-            deltaTextView.text = helper.truncateNumberToNSymbols( String.format("%+.2f", delta/currencyRate*100) , 5) + "%"
+            deltaTextView.text = helper.truncateNumberToNSymbols(Formatter(Locale.ENGLISH).format("%+.2f", delta/currencyRate*100).toString() , 5) + "%"
 
             if(currencyRate >= currencyPrevRate){
                 currencyInfoDirection.setImageResource(R.drawable.arrow_up)

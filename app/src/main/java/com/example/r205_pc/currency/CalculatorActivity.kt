@@ -6,10 +6,8 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
+import com.example.r205_pc.currency.utils.*
 import com.example.r205_pc.currency.utils.Currency
-import com.example.r205_pc.currency.utils.CurrencyInfo
-import com.example.r205_pc.currency.utils.CurrencyInfoOfDay
-import com.example.r205_pc.currency.utils.PreferencesHelper
 import kotlinx.android.synthetic.main.activity_calculator.*
 import java.lang.ref.WeakReference
 import java.text.SimpleDateFormat
@@ -30,8 +28,7 @@ class CalculatorActivity : AppCompatActivity(), View.OnClickListener, SelectCurr
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_calculator)
         getCurrenciesOfDate(formatter.format(Date()))
-        FetchAvailableCurrencies(this).execute()
-
+        initCurrencyDescriptionsList()
 
         calculatorButton0.setOnClickListener(this)
         calculatorButton1.setOnClickListener(this)
@@ -215,10 +212,10 @@ class CalculatorActivity : AppCompatActivity(), View.OnClickListener, SelectCurr
 
     /**
      * Получение данных о курсах*/
-    class FetchCurrenciesRates(activity: CalculatorActivity) : AsyncTask<String, Unit, Map<String, CurrencyInfoOfDay>>(){
+    class FetchCurrenciesRates(activity: CalculatorActivity) : AsyncTask<String, Unit, CurrencyInfoOfDay>(){
         private val activity = WeakReference<CalculatorActivity>(activity)
         private var date = ""
-        override fun doInBackground(vararg p0: String): Map<String, CurrencyInfoOfDay> {
+        override fun doInBackground(vararg p0: String): CurrencyInfoOfDay {
             val api = MyApplication.getFixerApi()
             date = p0[0]
 
@@ -226,16 +223,14 @@ class CalculatorActivity : AppCompatActivity(), View.OnClickListener, SelectCurr
             return api.getCurrenciesRatesOfDay(p0[0])
         }
 
-        override fun onPostExecute(result: Map<String, CurrencyInfoOfDay>) {
+        override fun onPostExecute(result: CurrencyInfoOfDay) {
             val act = activity.get()
             if(act != null){
                 val baseCurrency = act.preferencesHelper.getBaseCurrency()
-                val listCurrencies = result[date]?.list
-                if(listCurrencies != null){
-                    act.currencyList.clear()
-                    for(i in listCurrencies){
-                        act.currencyList.add(i)
-                    }
+                val listCurrencies = result.list
+                act.currencyList.clear()
+                for(i in listCurrencies){
+                    act.currencyList.add(i)
                 }
 
                 act.setBaseCurrency(baseCurrency)
@@ -246,27 +241,12 @@ class CalculatorActivity : AppCompatActivity(), View.OnClickListener, SelectCurr
         }
     }
 
-    class FetchAvailableCurrencies(activity: CalculatorActivity) : AsyncTask<Unit, Unit, List<Currency>>(){
-        private val activity = WeakReference<CalculatorActivity>(activity)
-
-        override fun doInBackground(vararg p0: Unit?): List<Currency> {
-            val api = MyApplication.getFixerApi()
-            return api.getSupportedSymbols()
-        }
-        override fun onPostExecute(result: List<Currency>) {
-            val act = activity.get()
-            if(act != null){
-                act.currencyDescriptionsList.clear()
-                for(i in result){
-                    act.currencyDescriptionsList.add(i)
-                    if(act.baseCurrency == i.code){
-                        act.calculatorBaseCurrencyDescription.text = i.description
-                    }
-                    if(act.currency == i.code){
-                        act.calculatorCurrencyDescription.text = i.description
-                    }
-                }
-            }
+    private fun initCurrencyDescriptionsList(){
+        val result = CurrencyListGetter().getCurrenciesFromResArray(this)
+        currencyDescriptionsList.clear()
+        for(i in result){
+            currencyDescriptionsList.add(i)
         }
     }
+
 }

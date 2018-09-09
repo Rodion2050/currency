@@ -14,26 +14,42 @@ class FixerApi{
     private var symbols = ""
     private val TAG = "FixerApi"
     private val formatter = SimpleDateFormat("yyyy-MM-dd")
+    private val supportedSymbols = mutableListOf<String>()
     fun setCacheFiles(currenciesListFile:File, currenciesRatesFile:File){
         dataCache.setCurrencyCacheFile(currenciesRatesFile)
-        dataCache.setAvailableCurrenciesFile(currenciesListFile)
     }
 
     fun setSymbols(syms: String){
         symbols = syms
-        dataCache.setCachedSymbols(syms)
     }
 
-    fun getCurrenciesRatesOfDay(date: String):Map<String, CurrencyInfoOfDay>{
-        val map = dataCache.getCurrencyCacheMap()
-        if(map.keys.contains(date)){
+    fun getCurrenciesRatesOfDay(date: String):CurrencyInfoOfDay{
+        if(dataCache.cachedDates.contains(date)){
             Log.d(TAG, "Read available currencies from cache")
-            return map
+            val res = dataCache.readCurrencyInfoFromCache(date)
+            if(res != null){
+                val list = res.list
+                val listOfChoosedCurrencies = mutableListOf<CurrencyInfo>()
+                for(i in 0 until list.size){
+                    if(symbols.contains(list[i].currency)){
+                        listOfChoosedCurrencies.add(list[i])
+                    }
+                }
+                return CurrencyInfoOfDay(listOfChoosedCurrencies)
+            }
+        }
+
+        var allSymbols = ""
+        for(i in supportedSymbols){
+            allSymbols += i
+            if(i != supportedSymbols.last()){
+                allSymbols += ","
+            }
         }
 
         val request = Uri.parse("http://data.fixer.io/api/$date").buildUpon()
                 .appendQueryParameter("access_key", accessKey)
-                .appendQueryParameter("symbols", symbols)
+                .appendQueryParameter("symbols", allSymbols)
                 .build()
         val response = NetworkUtil.loadStringFromUrl(URL(request.toString()))
         val document = JSONObject(response)
@@ -45,29 +61,41 @@ class FixerApi{
         }
 
         dataCache.addCurrencyInfoToCache(date, CurrencyInfoOfDay(list))
-        return dataCache.getCurrencyCacheMap()
+        val listOfChoosedCurrencies = mutableListOf<CurrencyInfo>()
+        for(i in 0 until list.size){
+            if(symbols.contains(list[i].currency)){
+                listOfChoosedCurrencies.add(list[i])
+            }
+        }
+        return CurrencyInfoOfDay(listOfChoosedCurrencies)
     }
 
 
-    fun getSupportedSymbols():List<Currency>{
-        val cachedCurrencyList = dataCache.getCurrencyList()
-        if(cachedCurrencyList.isNotEmpty()){
-            Log.d(TAG, "Read available currencies from cache")
-            return cachedCurrencyList
+//    fun getSupportedSymbolsfromServer():List<Currency>{
+//        val cachedCurrencyList = dataCache.getCurrencyList()
+//        if(cachedCurrencyList.isNotEmpty()){
+//            Log.d(TAG, "Read available currencies from cache")
+//            return cachedCurrencyList
+//        }
+//        Log.d(TAG, "Read available currencies from server")
+//        val request = Uri.parse("http://data.fixer.io/api/symbols").buildUpon()
+//                .appendQueryParameter("access_key", accessKey)
+//                .build()
+//        val response = NetworkUtil.loadStringFromUrl(URL(request.toString()))
+//        val document = JSONObject(response)
+//        val symbols = document.getJSONObject("symbols")
+//        val list = mutableListOf<Currency>()
+//        for(i in symbols.keys()){
+//            list.add(Currency(i, symbols.getString(i)))
+//        }
+//
+//        dataCache.writeAvailableCurrenciesToCache(list)
+//        return list
+//    }
+    fun setSupportedSymbols(list:Array<String>){
+        supportedSymbols.clear()
+        for(i in list){
+            supportedSymbols.add(i)
         }
-        Log.d(TAG, "Read available currencies from server")
-        val request = Uri.parse("http://data.fixer.io/api/symbols").buildUpon()
-                .appendQueryParameter("access_key", accessKey)
-                .build()
-        val response = NetworkUtil.loadStringFromUrl(URL(request.toString()))
-        val document = JSONObject(response)
-        val symbols = document.getJSONObject("symbols")
-        val list = mutableListOf<Currency>()
-        for(i in symbols.keys()){
-            list.add(Currency(i, symbols.getString(i)))
-        }
-
-        dataCache.writeAvailableCurrenciesToCache(list)
-        return list
     }
 }

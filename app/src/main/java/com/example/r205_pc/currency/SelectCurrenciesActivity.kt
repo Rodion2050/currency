@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.preference.PreferenceManager
 import android.support.v7.widget.LinearLayoutManager
 import com.example.r205_pc.currency.utils.Currency
+import com.example.r205_pc.currency.utils.CurrencyListGetter
 import com.example.r205_pc.currency.utils.PreferencesHelper
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_select_currencies.*
@@ -19,7 +20,8 @@ class SelectCurrenciesActivity : AppCompatActivity() {
         setContentView(R.layout.activity_select_currencies)
 
         initRecyclerView()
-        FetchAvailableCurrencies(this).execute()
+        currencyChooseAdapter.setData(CurrencyListGetter().getCurrenciesFromResArray(this),
+                preferenceHelper.getUsedCurrencySymbols())
     }
 
     private fun initRecyclerView() {
@@ -30,25 +32,8 @@ class SelectCurrenciesActivity : AppCompatActivity() {
         }
     }
 
-    class FetchAvailableCurrencies(activity: SelectCurrenciesActivity) : AsyncTask<Unit, Unit, List<Currency>>(){
-        private val activity = WeakReference<SelectCurrenciesActivity>(activity)
-
-        override fun doInBackground(vararg p0: Unit?): List<Currency> {
-            val api = MyApplication.getFixerApi()
-            return api.getSupportedSymbols()
-        }
-        override fun onPostExecute(result: List<Currency>) {
-            val act = activity.get()
-            if(act != null){
-                act.currencyChooseAdapter.setData(result, act.preferenceHelper.getUsedCurrencySymbols())
-            }
-        }
-    }
-
     override fun onPause() {
         super.onPause()
         preferenceHelper.setUsedCurrencySymbols(currencyChooseAdapter.getSelectedCurrencies())
     }
-
-
 }

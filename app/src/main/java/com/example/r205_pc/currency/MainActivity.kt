@@ -27,7 +27,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.collections.HashMap
 
-class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.OnCurrencyChooseListener {
+class MainActivity : AppCompatActivity(), CurrencyAdapter.OnCurrencyChooseListener, DatePickerDialogFragment.OnDateChosenListener {
     private val TAG = "MainActivity"
     private val currencyAdapter = CurrencyAdapter("", "", mapOf(Pair("", CurrencyInfoOfDay(emptyList()))), 1.0f, false, this)
     private val formatter = SimpleDateFormat("yyyy-MM-dd")
@@ -46,13 +46,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.
         fab.setOnClickListener { view ->
             startActivity(Intent(this, SelectCurrenciesActivity::class.java))
         }
-        FetchAvailableCurrencies(this).execute()
+        initCurrenciesMap()
 
         initRecyclerView()
 
-
-        okButton.setOnClickListener(this)
-        cancelButton.setOnClickListener(this)
 
         if(savedInstanceState != null){
              currDate = savedInstanceState.getString("CurrDate", formatter.format(Date()))
@@ -63,22 +60,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.
     override fun onStart() {
         super.onStart()
         fixerApi.setSymbols(preferencesHelper.getUsedCurrencySymbols())
+        fixerApi.setSupportedSymbols(resources.getStringArray(R.array.currenciesList))
         getCurrenciesOfDate(currDate)
-        showData()
 
 
     }
 
-    override fun onClick(view: View?) {
-        when (view?.id) {
-            R.id.cancelButton -> showData()
-            R.id.okButton -> {
-                currDate = formatter.format(datePickerView.date())
-                getCurrenciesOfDate(currDate)
-                showData()
-            }
-        }
-    }
 
     override fun onCurrencyChooseListener(currency: CurrencyInfo) {
         val invertRate = preferencesHelper.getInvertRates()
@@ -106,13 +93,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.
             date = p0[0]
             val act = activity.get()
 
-
-            var map = api.getCurrenciesRatesOfDay(p0[0])
-
+            val map = HashMap<String, CurrencyInfoOfDay>()
+            map[date] = api.getCurrenciesRatesOfDay(date)
             if(act != null){
                 val fmt = act.formatter
                 val dateToCompare = fmt.format(fmt.parse(date).previousDay())
-                map = api.getCurrenciesRatesOfDay(dateToCompare)
+                map[dateToCompare] = api.getCurrenciesRatesOfDay(dateToCompare)
             }
             return map
         }
@@ -168,23 +154,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.
     }
 
 
-    class FetchAvailableCurrencies(activity: MainActivity) : AsyncTask<Unit, Unit, List<Currency>>(){
-        private val activity = WeakReference<MainActivity>(activity)
-
-        override fun doInBackground(vararg p0: Unit?): List<Currency> {
-            val api = MyApplication.getFixerApi()
-            return api.getSupportedSymbols()
-        }
-        override fun onPostExecute(result: List<Currency>) {
-            val act = activity.get()
-            if(act != null){
-                for(i in result){
-                    act.currenciesMap[i.code] = i.description
-                }
-            }
-        }
-    }
-
     override fun onSaveInstanceState(outState: Bundle?) {
         outState?.putString("CurrDate", currDate)
         super.onSaveInstanceState(outState)
@@ -206,18 +175,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.
     }
 
     private fun showDatePicker(){
-        currencyInfoRecyclerView.visibility = View.INVISIBLE
-        val yearFmt = SimpleDateFormat("yyyy")
-        val monthFmt = SimpleDateFormat("MM")
-        val dayFmt = SimpleDateFormat("dd")
-        val date = formatter.parse(currDate)
-        datePickerView.init(yearFmt.format(date).toInt(), monthFmt.format(date).toInt() - 1, dayFmt.format(date).toInt(), {d, a, b, c -> Unit})
-        datePickerDial.visibility = View.VISIBLE
+        val newFragment = DatePickerDialogFragment()
+        val args = Bundle()
+        args.putString(newFragment.DATE_ARGUMENT, currDate)
+        newFragment.arguments = args
+        newFragment.show(fragmentManager, "datePicker")
     }
 
-    private fun showData(){
-        currencyInfoRecyclerView.visibility = View.VISIBLE
-        datePickerDial.visibility = View.INVISIBLE
+    override fun onDateChosenListener(date: Date) {
+        currDate = formatter.format(date)
+        Log.d(TAG,"Show data for $currDate")
+        getCurrenciesOfDate(currDate)
     }
 
     private fun initRecyclerView(){
@@ -231,6 +199,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, CurrencyAdapter.
             // specify an viewAdapter (see also next example)
             adapter = currencyAdapter
 
+        }
+    }
+
+    private fun initCurrenciesMap(){
+        val codes = resources.getStringArray(R.array.currenciesList)
+        val descriptions = resources.getStringArray(R.array.currenciesDescriptionList)
+        for(i in 0 until codes.size){
+            currenciesMap[codes[i]] = descriptions[i]
         }
     }
 
